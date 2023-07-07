@@ -30,33 +30,50 @@
     <?php if (isset($_SESSION['user'])): ?>
         <div class="form-container">
             <h2 class="text-center">Partagez vos idées</h2>
-            <form class="form" method="POST" action="">
-                <div class="form-group">
-                    <input class="input full-width" type="text" name="idea" placeholder="Saisissez votre idée" required>
-                </div>
-                <div class="form-group">
-                    <button class="button-primary" type="submit">Soumettre</button>
-                </div>
-            </form>
 
             <?php
-                // Traitement du formulaire d'idée soumise
-                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    $idea = $_POST['idea'];
-                    $date = date('Y-m-d'); // Date actuelle
+                $username = $_SESSION['user'];
+                $date = date('Y-m-d'); // Date actuelle
 
-                    // Création de la table ideas si elle n'existe pas
-                    $createTableQuery = "CREATE TABLE IF NOT EXISTS ideas (
-                                            id INT AUTO_INCREMENT PRIMARY KEY,
-                                            idea VARCHAR(255) NOT NULL,
-                                            date DATE NOT NULL,
-                                            username VARCHAR(255) NOT NULL
-                                        )";
-                    $conn->query($createTableQuery);
+                // Vérification si l'utilisateur a déjà posté une idée aujourd'hui
+                $checkIdeaQuery = "SELECT * FROM ideas WHERE username = '$username' AND date = '$date'";
+                $result = $conn->query($checkIdeaQuery);
 
-                    // Enregistrement de l'idée dans la base de données
-                    $insertIdeaQuery = "INSERT INTO ideas (idea, date, username) VALUES ('$idea', '$date', '$username')";
-                    $conn->query($insertIdeaQuery);
+                if ($result && $result->num_rows > 0) {
+                    echo '<p class="text-center">Vous avez déjà posté une idée aujourd\'hui.</p>';
+                } else {
+                    // Traitement du formulaire d'idée soumise
+                    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $idea = $_POST['idea'];
+
+                        // Création de la table ideas si elle n'existe pas
+                        $createTableQuery = "CREATE TABLE IF NOT EXISTS ideas (
+                                                id INT AUTO_INCREMENT PRIMARY KEY,
+                                                idea VARCHAR(255) NOT NULL,
+                                                date DATE NOT NULL,
+                                                username VARCHAR(255) NOT NULL
+                                            )";
+                        $conn->query($createTableQuery);
+
+                        // Enregistrement de l'idée dans la base de données
+                        $insertIdeaQuery = "INSERT INTO ideas (idea, date, username) VALUES ('$idea', '$date', '$username')";
+                        $conn->query($insertIdeaQuery);
+
+                        // Redirection vers la page d'accueil (index.php)
+                        header('Location: index.php');
+                        exit();
+                    }
+
+                    // Affichage du formulaire pour soumettre une idée
+                    echo '
+                    <form class="form" method="POST" action="">
+                        <div class="form-group">
+                            <input class="input full-width" type="text" name="idea" placeholder="Saisissez votre idée" required>
+                        </div>
+                        <div class="form-group">
+                            <button class="button-primary" type="submit">Soumettre</button>
+                        </div>
+                    </form>';
                 }
             ?>
         </div>
